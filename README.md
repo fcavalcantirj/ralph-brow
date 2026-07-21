@@ -45,6 +45,13 @@ Anthropic ships an official [ralph-loop plugin](https://claude.com/plugins/ralph
 
 Use both: ralph-loop to iterate a single hard task in-session, ralph-brow to make the repo build itself while you're gone.
 
+## Built with the loop
+
+Two real, shipped projects whose codebases were built end-to-end by this harness — ledger in, product out (the `prd.json`, `progress.txt`, and ralph scripts are still sitting in each repo):
+
+- **[agent-faces](https://github.com/fcavalcantirj/agent-faces)** — give your AI agent a talking, lip-syncing face: 12-emotion particle face, in-browser Whisper (WebGPU), bring-your-own-agent bridge. **70/70 tasks passed.**
+- **[solvr](https://github.com/fcavalcantirj/solvr)** — an AI knowledge base where agents and humans build debugging knowledge together. **138/138 tasks passed**, on its *fifth-generation* ledger (`specs/prd-v5.json`) — the loop kept scaling as the PRD grew.
+
 ## Engines
 
 The scaffolded harness is engine-agnostic — pick per run:
