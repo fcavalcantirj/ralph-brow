@@ -1,6 +1,6 @@
 ---
 name: ralph-brow
-description: Scaffold the Ralph autonomous PRD build loop (ralph.sh core, engine wrappers, continuous supervisor, progress meter) into any project. Use whenever Felipe says "ralph", "ralph-brow", "ralph this", "set up ralph", "add the ralph harness", "prd loop", or "ralph it" — and also when he wants an autonomous per-task agent build loop over a prd.json task ledger, an overnight/hands-off build runner, or to copy the ralph harness into another project, even if he never says the word "ralph". Asks scaffolding questions first, then generates the harness; never runs the loop itself. Engines: Claude Code CLI, Codex CLI (gpt-5.6-sol), and custom Codex providers (e.g. Sakana fugu).
+description: Scaffold the Ralph autonomous PRD build loop (ralph.sh core, engine wrappers, continuous supervisor, progress meter) into any project. Use whenever Felipe says "ralph", "ralph-brow", "ralph this", "set up ralph", "add the ralph harness", "prd loop", or "ralph it" — and also when he wants an autonomous per-task agent build loop over a prd.json task ledger, an overnight/hands-off build runner, or to copy the ralph harness into another project, even if he never says the word "ralph". Also use to spec a brand-new project: "spec a new project", "write a prd", "interview me about my project", "translate my requirements into prd.json", "start a project from scratch with ralph" — spec mode interviews Felipe, writes REQUIREMENTS.md, and generates the prd.json ledger. Asks scaffolding questions first, then generates the harness; never runs the loop itself. Engines: Claude Code CLI, Codex CLI (gpt-5.6-sol), and custom Codex providers (e.g. Sakana fugu).
 argument-hint: [target project path]
 ---
 
@@ -21,11 +21,18 @@ each iteration costs real tokens and starts building.**
 1. Target dir = argument if given, else cwd.
 2. If any of `ralph.sh`, `ralph-*.sh`, `progress.sh`, `progress.txt` already exist
    there: STOP and show what exists — overwrite only with explicit confirmation.
-3. PRD check: the ledger file must exist and be a JSON array of
-   `{category, description, steps, passes}` objects (verify with `jq`). The
-   grep-based `progress.sh` additionally needs one `"passes"` flag per line.
-   If there is no ledger yet, that's a prerequisite — offer to help write one
-   first; do not scaffold against a missing/foreign-format ledger.
+3. PRD router — auto-detect, don't ask which mode:
+   - **Valid `prd.json` exists** → continue to §2. Valid = JSON array where
+     every task has EXACTLY the four fields `{category, description, steps,
+     passes}` — no extras, no omissions — with one `"passes"` per line (the
+     grep meter needs it). A ledger with extra/missing fields: flag what
+     deviates and ask before proceeding — meters and loop prompts assume the
+     canonical shape.
+   - **No `prd.json` but a requirements doc exists** (`REQUIREMENTS.md`,
+     `PRD.md`, `SPEC.md`, `docs/requirements*.md`, or similar) → read
+     `references/spec-mode.md` and offer to translate it into `prd.json`.
+   - **Neither** → read `references/spec-mode.md` and run full spec mode:
+     interview → REQUIREMENTS.md → sign-off → translate → back here.
 4. `which claude codex` — only offer engines whose CLI is installed.
 5. `git rev-parse --git-dir` — note whether the repo is git-initialized (affects
    codex flags and the commit step wording; the harness tolerates git-less repos).

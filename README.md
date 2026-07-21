@@ -57,6 +57,16 @@ The skill checks your prerequisites (a valid `prd.json` ledger, installed CLIs, 
 ./ralph-continuous.sh codex  # hands off, go to sleep
 ```
 
+## Spec mode — no PRD? It builds one with you
+
+The skill auto-detects where your project stands:
+
+- **`prd.json` exists** → straight to scaffolding.
+- **Requirements doc exists** (`REQUIREMENTS.md`, `PRD.md`, `SPEC.md`…) but no ledger → it offers to translate your requirements into `prd.json`, asking only about genuine gaps.
+- **Nothing yet** → **spec mode**: a real product interview (it mines your repo and conversation first — no obvious questions), writes `REQUIREMENTS.md`, waits for your sign-off, then translates it into the ledger.
+
+Generated ledgers follow [Anthropic's guidance for long-running agent harnesses](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents): a strictly 4-field task schema (validated with `jq` before hand-off), end-to-end user-verifiable steps, initializer tasks first, one-session granularity (err toward more, smaller tasks), every task starting `passes: false`, and an immutable-ledger rule — the loop only ever flips `passes`.
+
 ## The ledger format
 
 `prd.json` is a JSON array, ordered by priority:
