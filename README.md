@@ -1,8 +1,12 @@
 # ralph-brow 🤖🔁
 
+<p align="center">
+  <img src="assets/hero.svg" width="760" alt="ralph-brow — animated: the Ralph loop completing a task, flipping passes to true, progress bar advancing while you sleep">
+</p>
+
 A [Claude Code skill](https://docs.claude.com/en/docs/claude-code/skills) that scaffolds the **Ralph autonomous build loop** into any project — ask a few questions, get a complete self-driving harness that builds your product task by task from a `prd.json` ledger.
 
-Inspired by the "Ralph Wiggum" technique: run a stateless coding agent in a loop against a task ledger until everything passes.
+Inspired by [Geoff Huntley's "Ralph Wiggum" technique](https://ghuntley.com/ralph/): run a stateless coding agent in a loop against a task ledger until everything passes.
 
 ## The loop
 
@@ -22,6 +26,24 @@ Inspired by the "Ralph Wiggum" technique: run a stateless coding agent in a loop
 ```
 
 Statelessness is the trick: no conversation memory, no drift — every run re-reads the ledger and picks up exactly where the last one stopped. `progress.txt` is the durable memory; `prd.json` is the single source of truth. When every task passes, the loop emits `<promise>COMPLETE</promise>` and shuts itself down.
+
+## Not the same thing as the `ralph-loop` plugin
+
+Anthropic ships an official [ralph-loop plugin](https://claude.com/plugins/ralph-loop) — don't confuse the two, they solve different problems:
+
+**ralph-loop** runs *inside your live Claude Code session*: a stop hook intercepts session exit and re-feeds your prompt (`/ralph-loop "fix this" --max-iterations 10`) until Claude outputs the completion promise. Same session, same context, Claude Code only, you at the keyboard. Perfect for hammering one gnarly task while you watch.
+
+**ralph-brow** prepares the *codebase itself* to be autonomous: it interviews you into a validated `prd.json` ledger, then drops a shell harness into the repo that anything can drive — the Claude Code CLI, the Codex CLI, a custom provider, a cron job, another agent over SSH. Every iteration is a fresh stateless process; state lives in the repo (`prd.json`, `progress.txt`, git history); the whole thing runs detached in tmux overnight with quota pacing. Totally hands-off — the original Ralph Wiggum premise.
+
+| | ralph-loop (official plugin) | ralph-brow (this) |
+|---|---|---|
+| Runs | inside your Claude Code session | anywhere — repo carries its own harness |
+| Input | a prompt you write | spec interview → REQUIREMENTS.md → prd.json |
+| Engine | Claude Code only | Claude Code CLI, Codex CLI, any custom provider |
+| State | session context | repo artifacts: ledger, journal, commits |
+| You | at the keyboard | asleep |
+
+Use both: ralph-loop to iterate a single hard task in-session, ralph-brow to make the repo build itself while you're gone.
 
 ## Engines
 

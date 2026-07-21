@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+  <style>
+    .l { animation: cycle 10s infinite; opacity: 0; }
+    @keyframes cycle {
+      0% { opacity: 0; } 96% { opacity: 1; } 100% { opacity: 0; }
+    }
+    .t1 { animation: w1 10s infinite; opacity: 0; }
+    @keyframes w1 { 0%,4% {opacity:0} 7%,94% {opacity:1} 98%,100% {opacity:0} }
+    .t2 { animation: w2 10s infinite; opacity: 0; }
+    @keyframes w2 { 0%,14% {opacity:0} 17%,94% {opacity:1} 98%,100% {opacity:0} }
+    .t3 { animation: w3 10s infinite; opacity: 0; }
+    @keyframes w3 { 0%,26% {opacity:0} 29%,94% {opacity:1} 98%,100% {opacity:0} }
+    .t4 { animation: w4 10s infinite; opacity: 0; }
+    @keyframes w4 { 0%,40% {opacity:0} 43%,94% {opacity:1} 98%,100% {opacity:0} }
+    .t5 { animation: w5 10s infinite; opacity: 0; }
+    @keyframes w5 { 0%,50% {opacity:0} 53%,94% {opacity:1} 98%,100% {opacity:0} }
+    .passesFalse { animation: pf 10s infinite; opacity: 0; }
+    @keyframes pf { 0%,50% {opacity:0} 53%,61% {opacity:1} 63%,100% {opacity:0} }
+    .passesTrue { animation: pt 10s infinite; opacity: 0; }
+    @keyframes pt { 0%,63% {opacity:0} 65%,94% {opacity:1} 98%,100% {opacity:0} }
+    .t6 { animation: w6 10s infinite; opacity: 0; }
+    @keyframes w6 { 0%,68% {opacity:0} 71%,94% {opacity:1} 98%,100% {opacity:0} }
+    .t7 { animation: w7 10s infinite; opacity: 0; }
+    @keyframes w7 { 0%,86% {opacity:0} 89%,94% {opacity:1} 98%,100% {opacity:0} }
+    .bar { transform-origin: 96px 0; animation: grow 10s infinite; }
+    @keyframes grow { 0%,76% {transform: scaleX(0.933)} 82%,100% {transform: scaleX(0.955)} }
+    .c42 { animation: c42 10s infinite; opacity: 1; }
+    @keyframes c42 { 0%,78% {opacity:1} 80%,100% {opacity:0} }
+    .c43 { animation: c43 10s infinite; opacity: 0; }
+    @keyframes c43 { 0%,78% {opacity:0} 80%,94% {opacity:1} 98%,100% {opacity:0} }
+    .cursor { animation: blink 1.2s step-end infinite; }
+    @keyframes blink { 0%,100% {opacity:1} 50% {opacity:0} }
+  </style>
+
+  <!-- backdrop card -->
+  <rect x="0" y="0" width="760" height="400" rx="16" fill="#0a0c10"/>
+
+  <!-- terminal window -->
+  <rect x="20" y="18" width="720" height="316" rx="10" fill="#0d1117" stroke="#21262d" stroke-width="1.5"/>
+  <rect x="20" y="18" width="720" height="34" rx="10" fill="#161b22"/>
+  <rect x="20" y="42" width="720" height="10" fill="#161b22"/>
+  <circle cx="42" cy="35" r="6" fill="#ff5f57"/>
+  <circle cx="62" cy="35" r="6" fill="#febc2e"/>
+  <circle cx="82" cy="35" r="6" fill="#28c840"/>
+  <text x="380" y="40" text-anchor="middle" font-size="13" fill="#8b949e">tmux: ralph — ./ralph-continuous.sh claude</text>
+
+  <!-- animated session lines -->
+  <g font-size="14">
+    <text class="t1" x="44" y="84" fill="#58d6ff" font-weight="bold">═══ Iteration 7 · engine: claude ═══</text>
+    <text class="t2" x="44" y="112" fill="#e6edf3">▸ task 43/45 — Wire the end-to-end voice conversation orchestrator</text>
+    <text class="t3" x="44" y="140" fill="#8b949e">building… tests <tspan fill="#ff7b72">RED</tspan> → <tspan fill="#3fb950">GREEN</tspan> · files ≤500 lines</text>
+    <text class="t4" x="44" y="168" fill="#8b949e">Verify: npm run typecheck <tspan fill="#3fb950">✓</tspan>  npm run build <tspan fill="#3fb950">✓</tspan>  e2e <tspan fill="#3fb950">✓</tspan></text>
+    <text class="t5" x="44" y="196" fill="#e6edf3">prd.json ▸ "passes": <tspan> </tspan></text>
+    <text class="passesFalse" x="248" y="196" fill="#ff7b72" font-weight="bold">false</text>
+    <text class="passesTrue" x="248" y="196" fill="#3fb950" font-weight="bold">true ✓</text>
+    <text class="t6" x="44" y="224" fill="#8b949e">✓ committed · journal updated · <tspan fill="#d29922">⏸ pause 30 min (window pacing)</tspan></text>
+  </g>
+
+  <!-- progress -->
+  <g class="l">
+    <text x="44" y="262" font-size="14" fill="#8b949e">📊</text>
+    <rect x="96" y="250" width="480" height="14" rx="7" fill="#21262d"/>
+    <g class="bar"><rect x="96" y="250" width="480" height="14" rx="7" fill="#238636"/></g>
+    <text class="c42" x="592" y="262" font-size="14" fill="#e6edf3">42/45 (93%)</text>
+    <text class="c43" x="592" y="262" font-size="14" fill="#3fb950">43/45 (95%)</text>
+  </g>
+  <text class="t7" x="44" y="296" font-size="14" fill="#58d6ff">═══ Iteration 8 · stateless · re-reads the ledger ═══<tspan class="cursor" fill="#e6edf3">▊</tspan></text>
+  <text class="l" x="44" y="322" font-size="12" fill="#484f58">liveness: tmux ls · progress: ./progress.sh · you: asleep 😴</text>
+
+  <!-- footer -->
+  <text x="380" y="362" text-anchor="middle" font-size="14" fill="#e6edf3">spec interview → <tspan fill="#d29922">REQUIREMENTS.md</tspan> → <tspan fill="#58d6ff">prd.json</tspan> → loop → <tspan fill="#3fb950">&lt;promise&gt;COMPLETE&lt;/promise&gt;</tspan></text>
+  <text x="380" y="386" text-anchor="middle" font-size="12" fill="#8b949e">engines: claude code cli · codex (gpt-5.6-sol) · any custom provider — totally hands-off</text>
+</svg>
