@@ -1,0 +1,9 @@
+# {{PROJECT_SLUG}} — build journal (append-only)
+#
+# Each Ralph iteration appends a dated entry describing the task it completed.
+# This is the durable memory across stateless runs — read it before starting.
+
+{{DATE}}: Harness bootstrapped. {{PRD_FILE}} ({{TASK_COUNT}} tasks) + Ralph harness in
+place: ralph.sh core with engine wrappers ({{ENGINE_LIST}}), ralph-continuous.sh
+supervisor, and progress.sh meter. No app code yet. Next undone task: the first
+{{PRD_FILE}} task with passes=false (top of the array).
