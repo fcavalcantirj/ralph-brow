@@ -57,6 +57,31 @@ The skill checks your prerequisites (a valid `prd.json` ledger, installed CLIs, 
 ./ralph-continuous.sh codex  # hands off, go to sleep
 ```
 
+## Running it overnight
+
+Three rules, learned the hard way:
+
+**1. Detach or die.** Never run the loop as a child of an agent session or a terminal that will close — it takes a SIGHUP when the parent tears down and dies at task 1 of 40. Run it in tmux:
+
+```bash
+tmux new-session -d -s ralph './ralph-continuous.sh claude >> ralph-continuous.log 2>&1'
+tmux ls                        # still alive?
+./progress.sh                  # how far along?
+tmux kill-session -t ralph     # stop (prefer during a pause countdown)
+```
+
+The supervisor detects it's detached and logs one clean line per pause instead of animated countdowns.
+
+**2. Pace for your usage windows.** Subscription plans meter a 5-hour rolling window *and* a weekly cap — an unpaced loop exhausts the first before midnight and spends the night in rate-limit backoff. Tune `BATCH_SIZE` and `BATCH_PAUSE_MINS` in `.env.ralph.local`:
+
+```
+tasks/hour ≈ BATCH_SIZE × 60 / (BATCH_SIZE × avg_task_mins + BATCH_PAUSE_MINS)
+```
+
+Starting point: `BATCH_SIZE=2`, `BATCH_PAUSE_MINS=30` → with ~10-min tasks, ≈2.4 tasks/hour, ~19 tasks across 8 hours — spread across the night instead of slammed into the first window. The built-in rate-limit backoff is reactive; proactive pauses are what preserve your weekly cap.
+
+**3. Smoke before you sleep.** Run 1–2 *attended* iterations first and read the commit + journal entry before detaching. One supervised task catches a broken Verify step or missing API key in ten minutes; discovering it at 7am costs the night and the quota it burned retrying.
+
 ## Spec mode — no PRD? It builds one with you
 
 The skill auto-detects where your project stands:

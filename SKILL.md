@@ -1,6 +1,6 @@
 ---
 name: ralph-brow
-description: Scaffold the Ralph autonomous PRD build loop (ralph.sh core, engine wrappers, continuous supervisor, progress meter) into any project. Use whenever Felipe says "ralph", "ralph-brow", "ralph this", "set up ralph", "add the ralph harness", "prd loop", or "ralph it" — and also when he wants an autonomous per-task agent build loop over a prd.json task ledger, an overnight/hands-off build runner, or to copy the ralph harness into another project, even if he never says the word "ralph". Also use to spec a brand-new project: "spec a new project", "write a prd", "interview me about my project", "translate my requirements into prd.json", "start a project from scratch with ralph" — spec mode interviews Felipe, writes REQUIREMENTS.md, and generates the prd.json ledger. Asks scaffolding questions first, then generates the harness; never runs the loop itself. Engines: Claude Code CLI, Codex CLI (gpt-5.6-sol), and custom Codex providers (e.g. Sakana fugu).
+description: Scaffold the Ralph autonomous PRD build loop (ralph.sh core, engine wrappers, continuous supervisor, progress meter) into any project. Use whenever Felipe says "ralph", "ralph-brow", "ralph this", "set up ralph", "add the ralph harness", "prd loop", or "ralph it" — and also when he wants an autonomous per-task agent build loop over a prd.json task ledger, an overnight/hands-off build runner, or to copy the ralph harness into another project, even if he never says the word "ralph". Also use to spec a brand-new project: "spec a new project", "write a prd", "interview me about my project", "translate my requirements into prd.json", "start a project from scratch with ralph" — spec mode interviews Felipe, writes REQUIREMENTS.md, and generates the prd.json ledger. Also covers operating the loop: "run ralph overnight", "leave the loop running", "ralph in tmux", pacing batches against usage limits. Asks scaffolding questions first, then generates the harness; never runs the loop itself. Engines: Claude Code CLI, Codex CLI (gpt-5.6-sol), and custom Codex providers (e.g. Sakana fugu).
 argument-hint: [target project path]
 ---
 
@@ -86,7 +86,14 @@ If NO custom engine was chosen: delete the `{{CUSTOM_ENGINE}}` branches from
 - `./progress.sh` prints `0/N (0%)` and the ledger is untouched afterwards.
 - `./ralph.sh` with no args prints usage.
 - Print a cheatsheet: `./ralph-<engine>.sh 1` (one task), `./ralph-continuous.sh
-  <engine>` (forever), knobs live in `.env.ralph.local`.
+  <engine>` (forever), knobs live in `.env.ralph.local`, and the overnight
+  one-liner: `tmux new-session -d -s ralph './ralph-continuous.sh <engine> >>
+  ralph-continuous.log 2>&1'` — with the rule: 1–2 attended tasks BEFORE any
+  unattended run.
+
+Whenever the user mentions running the loop overnight, unattended, in tmux, or
+"leaving it going": read `references/overnight.md` (tmux detach-or-die pattern,
+usage-window pacing math, smoke-first rule, clean cut-overs) and relay it.
 
 ## Hard-won facts (do not rediscover)
 

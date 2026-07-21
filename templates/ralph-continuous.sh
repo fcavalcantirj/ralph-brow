@@ -179,15 +179,22 @@ while true; do
 📊 $(./progress.sh)"
     fi
 
-    remaining=$WAIT_TIME_SECS; total_wait=$WAIT_TIME_SECS
-    while [ $remaining -gt 0 ]; do
-      elapsed=$((total_wait - remaining))
-      echo -ne "\r${YELLOW}${BOLD}   ⏳ Waiting: ${NC}${YELLOW}$(format_time $remaining)${NC}  "
-      print_progress_bar $elapsed $total_wait
-      echo -ne "  ${DIM}Resume: ${resume_time}${NC}   "
-      sleep 1; remaining=$((remaining - 1))
-    done
-    echo ""; echo -e "${GREEN}${BOLD}   ✅ Wait complete! Resuming...${NC}"; echo ""
+    if [ -t 1 ]; then
+      remaining=$WAIT_TIME_SECS; total_wait=$WAIT_TIME_SECS
+      while [ $remaining -gt 0 ]; do
+        elapsed=$((total_wait - remaining))
+        echo -ne "\r${YELLOW}${BOLD}   ⏳ Waiting: ${NC}${YELLOW}$(format_time $remaining)${NC}  "
+        print_progress_bar $elapsed $total_wait
+        echo -ne "  ${DIM}Resume: ${resume_time}${NC}   "
+        sleep 1; remaining=$((remaining - 1))
+      done
+      echo ""
+    else
+      # Detached (tmux >> log): one line and one sleep — no per-second countdown spam.
+      echo "   ⏳ Waiting ${WAIT_TIME_MINS} min — resume at ${resume_time}"
+      sleep $WAIT_TIME_SECS
+    fi
+    echo -e "${GREEN}${BOLD}   ✅ Wait complete! Resuming...${NC}"; echo ""
   else
     resume_time=$(date -d "+${BATCH_PAUSE_MINS} minutes" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -v+${BATCH_PAUSE_MINS}M '+%Y-%m-%d %H:%M:%S')
     echo ""
@@ -200,15 +207,22 @@ while true; do
 📊 $(./progress.sh)
 ⏸️ Next batch in ${BATCH_PAUSE_MINS} min"
 
-    remaining=$BATCH_PAUSE_SECS; total_pause=$BATCH_PAUSE_SECS
-    while [ $remaining -gt 0 ]; do
-      elapsed=$((total_pause - remaining))
-      echo -ne "\r${YELLOW}   ⏸️  Breathing space: ${NC}${YELLOW}$(printf '%02d:%02d' $((remaining/60)) $((remaining%60)))${NC}  "
-      print_progress_bar $elapsed $total_pause
-      echo -ne "  ${DIM}Next batch: ${resume_time}${NC}   "
-      sleep 1; remaining=$((remaining - 1))
-    done
-    echo ""; echo -e "${GREEN}   ✅ Starting next batch...${NC}"; echo ""
+    if [ -t 1 ]; then
+      remaining=$BATCH_PAUSE_SECS; total_pause=$BATCH_PAUSE_SECS
+      while [ $remaining -gt 0 ]; do
+        elapsed=$((total_pause - remaining))
+        echo -ne "\r${YELLOW}   ⏸️  Breathing space: ${NC}${YELLOW}$(printf '%02d:%02d' $((remaining/60)) $((remaining%60)))${NC}  "
+        print_progress_bar $elapsed $total_pause
+        echo -ne "  ${DIM}Next batch: ${resume_time}${NC}   "
+        sleep 1; remaining=$((remaining - 1))
+      done
+      echo ""
+    else
+      # Detached (tmux >> log): one line and one sleep — no per-second countdown spam.
+      echo "   ⏸️  Pausing ${BATCH_PAUSE_MINS} min — next batch at ${resume_time}"
+      sleep $BATCH_PAUSE_SECS
+    fi
+    echo -e "${GREEN}   ✅ Starting next batch...${NC}"; echo ""
   fi
 
   if [ "$prd_complete" = true ]; then
