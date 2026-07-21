@@ -57,7 +57,9 @@ What to dig into (skip whatever context already answered):
   rightly refuse to copy from unlicensed sources).
 - **Verification environment**: how can a HEADLESS agent verify features?
   Browser automation (Playwright/Puppeteer) available? CLI-testable? This
-  decides how `steps` get written.
+  decides how `steps` get written. Also capture the ONE host-side command that
+  must always pass on a healthy checkout — it becomes the `VERIFY_CMD` scaffold
+  knob (SKILL.md §2), the harness's ground truth outside the engine sandbox.
 
 ## REQUIREMENTS.md
 

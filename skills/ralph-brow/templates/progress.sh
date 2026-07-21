@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Count passed and total requirements in the {{PROJECT_SLUG}} PRD.
-# Relies on the ledger keeping one "passes" flag per line.
+# jq is formatting-immune (engines rewrite the ledger with arbitrary JSON
+# spacing); the grep fallback relies on one "passes" flag per line.
 
 prd_file="${PRD_FILE:-{{PRD_FILE}}}"
 
@@ -10,15 +11,29 @@ if [ ! -f "$prd_file" ]; then
   exit 0
 fi
 
-total=$(grep -c '"passes"' "$prd_file" | tr -d '\n')
-passed=$(grep -c '"passes": true' "$prd_file" | tr -d '\n')
+if command -v jq >/dev/null 2>&1 && total=$(jq 'length' "$prd_file" 2>/dev/null); then
+  passed=$(jq '[.[] | select(.passes == true)] | length' "$prd_file" 2>/dev/null)
+else
+  total=$(grep -c '"passes"' "$prd_file" | tr -d '\n')
+  passed=$(grep -cE '"passes"[[:space:]]*:[[:space:]]*true' "$prd_file" | tr -d '\n')
+fi
 
 total=${total:-0}
 passed=${passed:-0}
 
+# Human-only checks the loop journaled instead of skipping — pending until a
+# human confirms them. 100% with UAT pending is NOT "everything verified".
+uat=0
+if [ -f progress.txt ]; then
+  uat=$(grep -c 'UAT:' progress.txt 2>/dev/null | tr -d '\n')
+fi
+uat=${uat:-0}
+suffix=""
+[ "$uat" -gt 0 ] 2>/dev/null && suffix=" · ${uat} UAT pending"
+
 if [ "$total" -eq 0 ]; then
-  echo "0/0 (0%)"
+  echo "0/0 (0%)${suffix}"
 else
   percent=$((passed * 100 / total))
-  echo "${passed}/${total} (${percent}%)"
+  echo "${passed}/${total} (${percent}%)${suffix}"
 fi

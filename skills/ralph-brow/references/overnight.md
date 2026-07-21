@@ -69,6 +69,36 @@ sandbox/network refusal, or a mis-ordered ledger while it costs ten minutes.
 Discovering the same thing at 7am costs the whole night AND the quota it
 burned failing repeatedly.
 
+Three more checks, learned from the fuguFaces run (45/45 "complete", zero
+commits, 4 defects only visible on real hardware):
+
+1. **Probe the ENGINE's sandbox** — your shell can always bind ports and touch
+   `.git`; the engine's sandbox is what silently can't. Run the probes through
+   the engine you'll use overnight (swap in `claude -p '…'` for the claude
+   engine):
+
+   ```bash
+   # Port-bind probe — sandboxes that refuse this will silently skip
+   # dev servers, Playwright, and socket tests all night
+   codex exec --skip-git-repo-check --sandbox workspace-write \
+     'Run python3 -c "import socket; s=socket.socket(); s.bind((\"127.0.0.1\",0)); print(\"BIND OK\")" and paste the output verbatim.'
+
+   # .git probe — some sandboxes deny git init/commit entirely
+   codex exec --skip-git-repo-check --sandbox workspace-write \
+     'Run: mkdir .ralph-probe && cd .ralph-probe && git init && git commit --allow-empty -m probe && cd .. && rm -rf .ralph-probe — paste each command result.'
+   ```
+
+   A refused probe is fine — ralph.sh's host backstops cover commits and
+   `VERIFY_CMD` — but you want to KNOW, because in-sandbox Verify steps
+   (servers, browsers, sockets) will be self-attested, not run.
+2. **After the attended iteration, `git log -1 --stat` must show a NEW
+   commit** — the engine's or ralph.sh's host auto-commit. Zero new commits
+   means both paths failed: stop and investigate before sleeping.
+3. **Set `VERIFY_CMD` in `.env.ralph.local`** and run it once attended to time
+   it — it executes on the host after every batch, so a 6-minute verify with
+   `BATCH_SIZE=2` adds ~3 min/task of wall clock. Pick the always-green
+   command (unit tests + build), not the aspirational e2e suite.
+
 ## Clean cut-overs
 
 To retune mid-run (pause length, batch size, engine): kill the tmux session

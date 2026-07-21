@@ -20,7 +20,7 @@ set -e
 #   ENGINE=claude|codex|{{CUSTOM_ENGINE}}   MODEL=<claude pin>
 #   CODEX_MODEL=gpt-5.6-sol   CODEX_EFFORT=max
 #   CUSTOM_MODEL={{CUSTOM_MODEL}}   CUSTOM_EFFORT=   RALPH_PUSH=0
-#   PRD_FILE={{PRD_FILE}}
+#   PRD_FILE={{PRD_FILE}}   VERIFY_CMD=<host verify command, e.g. "npm run verify">
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Load git-ignored local config if present (provider keys, RALPH_PUSH, MODEL…)
@@ -34,6 +34,7 @@ CODEX_MODEL="${CODEX_MODEL:-gpt-5.6-sol}"
 CODEX_EFFORT="${CODEX_EFFORT:-max}"
 CUSTOM_MODEL="${CUSTOM_MODEL:-{{CUSTOM_MODEL}}}"   # --custom-engine--
 CUSTOM_EFFORT="${CUSTOM_EFFORT:-}"     # --custom-engine-- empty = don't send reasoning effort
+VERIFY_CMD="${VERIFY_CMD:-}"           # host-side batch verify (empty = off); runs OUTSIDE the engine sandbox
 
 case "$ENGINE" in
   claude|codex|{{CUSTOM_ENGINE}}) ;;
@@ -69,9 +70,62 @@ format_time() {
   printf "%02d:%02d:%02d" $((secs/3600)) $((secs%3600/60)) $((secs%60))
 }
 
-if [ -z "$1" ]; then
+# Host-side verification (runs OUTSIDE the engine sandbox, once per batch).
+# The engine's sandbox can silently skip checks it cannot run (port binds,
+# browsers, git) — this is the ground truth. On failure: journal the tail to
+# progress.txt and inject ONE URGENT ledger task (deduped against open tasks).
+run_host_verify() {
+  [ -n "$VERIFY_CMD" ] || return 0
+  echo -e "${CYAN}🔍 Host verify: ${VERIFY_CMD}${NC}"
+  local vout
+  vout=$(mktemp)
+  if bash -c "$VERIFY_CMD" > "$vout" 2>&1; then
+    echo -e "${GREEN}✅ Host verify passed${NC}"
+    rm -f "$vout"
+    return 0
+  fi
+  echo -e "${RED}${BOLD}❌ Host verify FAILED — output tail:${NC}"
+  tail -20 "$vout"
+  {
+    echo ""
+    echo "$(date '+%Y-%m-%d %H:%M'): HOST VERIFY FAILED — \`$VERIFY_CMD\` exited nonzero. Tail:"
+    tail -20 "$vout" | sed 's/^/    /'
+  } >> progress.txt
+  if command -v jq >/dev/null 2>&1; then
+    local desc="URGENT: host verification failed — run '$VERIFY_CMD' on the host, fix every failure, re-run until it exits 0"
+    if ! jq -e --arg d "$desc" 'any(.[]; .description == $d and .passes == false)' "$PRD_FILE" >/dev/null 2>&1; then
+      local tprd
+      tprd=$(mktemp)
+      if jq --arg d "$desc" --arg cmd "$VERIFY_CMD" \
+        '[{category: "infra", description: $d,
+           steps: [("Run on the host: " + $cmd + " and read every failure"),
+                   "Fix the root causes — do NOT weaken, skip, or sandbox-attest the checks",
+                   ("Re-run " + $cmd + " until it exits 0")],
+           passes: false}] + .' "$PRD_FILE" > "$tprd"; then
+        mv "$tprd" "$PRD_FILE"
+        echo -e "${YELLOW}⚠️  Injected URGENT task at top of ${PRD_FILE}${NC}"
+      else
+        rm -f "$tprd"
+      fi
+    fi
+  else
+    echo -e "${YELLOW}⚠️  jq not found — cannot inject URGENT task; see progress.txt${NC}"
+  fi
+  rm -f "$vout"
+  return 1
+}
+
+if [ -z "${1:-}" ] || ! [ "$1" -ge 1 ] 2>/dev/null; then
   echo "Usage: $0 <iterations>"
   exit 1
+fi
+
+# Host git backstop: some engine sandboxes cannot create .git (the fuguFaces
+# overnight run finished 45 tasks with zero commits). Sits after the usage
+# check so a bare ./ralph.sh stays side-effect-free.
+if [ ! -d .git ] && command -v git >/dev/null 2>&1; then
+  git init -b main >/dev/null 2>&1 || git init >/dev/null 2>&1
+  echo -e "${DIM}Initialized git repo (host backstop).${NC}"
 fi
 
 case "$ENGINE" in
@@ -113,6 +167,7 @@ CRITICAL:
 - ONE TASK ONLY, then STOP. Do NOT continue to another task.
 - Always 'git add .' (include NEW files) before committing.
 - After commit, you are DONE. Exit immediately.
+- HARNESS IS INFRASTRUCTURE, NOT DELIVERABLE: never create, modify, or replace ralph.sh, ralph-*.sh, progress.sh, .env.ralph.local, or the ledger schema unless the current task explicitly names them.
 - Keep files focused (~500 lines max).
 EOF
 
@@ -207,11 +262,27 @@ for ((i=1; i<=$1; i++)); do
     echo -e "${DIM}  💰 usage/cost: n/a (${ENGINE} engine — codex exec text mode reports no usage)${NC}"
   fi
 
+  # Host commit backstop: if the engine's sandbox couldn't commit, do it here.
+  if [ -d .git ] && command -v git >/dev/null 2>&1 && [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    commit_msg=$(grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}' progress.txt 2>/dev/null | tail -1 | head -c 72)
+    git add -A >/dev/null 2>&1 || true
+    git commit -m "${commit_msg:-ralph: host auto-commit after iteration $i}" >/dev/null 2>&1 \
+      && echo -e "${DIM}📦 Host auto-commit: ${commit_msg:-iteration $i}${NC}" || true
+  fi
+
   echo ""
   echo -e "${YELLOW}⏱  Iteration $i took ${BOLD}$(format_time $iter_time)${NC}"
   echo -e "${GREEN}📊 $(./progress.sh)${NC}"
 
   if grep -q "<promise>COMPLETE</promise>" "$tmpfile"; then
+    # The engine's claim of completeness only stands if the HOST agrees.
+    if ! run_host_verify; then
+      echo ""
+      echo -e "${RED}${BOLD}  🚫 Engine claims COMPLETE but host verify FAILED — banner withheld.${NC}"
+      echo -e "${RED}  An URGENT task was injected; the next batch will pick it up first.${NC}"
+      echo -e "${GREEN}📊 $(./progress.sh)${NC}"
+      exit 1
+    fi
     overall_end=$(date +%s)
     overall_time=$((overall_end - overall_start))
     avg_time=$((total_iteration_time / completed_iterations))
@@ -228,6 +299,10 @@ for ((i=1; i<=$1; i++)); do
     exit 0
   fi
 done
+
+# Batch ended without COMPLETE: verify anyway so drift is caught (and an URGENT
+# task injected) as early as possible. Informational — the batch itself succeeded.
+run_host_verify || true
 
 overall_end=$(date +%s)
 overall_time=$((overall_end - overall_start))

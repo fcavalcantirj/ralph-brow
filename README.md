@@ -81,6 +81,9 @@ ln -s ~/dev/ralph-brow/skills/ralph-brow ~/.claude/skills/ralph-brow
 ```
 
 Symlinking the skill folder makes your edits live immediately, no reinstall.
+After editing any template, run `bash tests/smoke.sh` — it renders the
+templates with dummy tokens, syntax-checks them, and drives the loop with a
+fake engine to assert the host-side backstops end-to-end (seconds, no network).
 
 ## Use
 
@@ -120,7 +123,7 @@ tasks/hour ≈ BATCH_SIZE × 60 / (BATCH_SIZE × avg_task_mins + BATCH_PAUSE_MIN
 
 Starting point: `BATCH_SIZE=2`, `BATCH_PAUSE_MINS=30` → with ~10-min tasks, ≈2.4 tasks/hour, ~19 tasks across 8 hours — spread across the night instead of slammed into the first window. The built-in rate-limit backoff is reactive; proactive pauses are what preserve your weekly cap.
 
-**3. Smoke before you sleep.** Run 1–2 *attended* iterations first and read the commit + journal entry before detaching. One supervised task catches a broken Verify step or missing API key in ten minutes; discovering it at 7am costs the night and the quota it burned retrying.
+**3. Smoke before you sleep.** Run 1–2 *attended* iterations first and read the commit + journal entry before detaching. One supervised task catches a broken Verify step or missing API key in ten minutes; discovering it at 7am costs the night and the quota it burned retrying. Also probe what the *engine's sandbox* can actually do (bind ports? create `.git`?), confirm the attended iteration produced a real commit, and set `VERIFY_CMD` in `.env.ralph.local` — the skill's `references/overnight.md` has the exact probe one-liners.
 
 ## Spec mode — no PRD? It builds one with you
 
@@ -161,12 +164,12 @@ Conventions the harness understands: an `URGENT` prefix jumps the queue, `DEPEND
 
 | File | Role |
 |---|---|
-| `ralph.sh` | engine-agnostic core loop |
+| `ralph.sh` | engine-agnostic core loop · host git backstop · host `VERIFY_CMD` gate |
 | `ralph-<engine>.sh` | one thin wrapper per engine you chose |
 | `ralph-continuous.sh` | forever-supervisor (batches, backoff, Telegram) |
-| `progress.sh` | `12/45 (26%)` progress meter |
+| `progress.sh` | `12/45 (26%) · 3 UAT pending` progress meter |
 | `progress.txt` | append-only build journal (the loop's memory) |
-| `.env.ralph.local` | git-ignored knobs + provider API key (only if needed) |
+| `.env.ralph.local` | git-ignored knobs, Telegram creds, `VERIFY_CMD`, provider API key |
 
 ## Battle-tested details
 
@@ -175,7 +178,8 @@ Lessons already baked into the templates so you don't rediscover them:
 - **macOS bash 3.2** cannot parse a heredoc inside `$(...)` when the body contains an apostrophe — prompts are assigned with `read -r -d ''` instead.
 - `codex exec` needs `--skip-git-repo-check` before your first task git-inits the repo, and `workspace-write` sandboxing blocks network unless you pass `-c 'sandbox_workspace_write.network_access=true'` (`npm install` needs it).
 - Custom Codex providers authenticate via `env_key` in `~/.codex/config.toml` — it must hold the env var *name*, never the key itself.
-- The harness tolerates repos that aren't git-initialized yet (commits start once your first infra task creates `.git`).
+- **Engine sandboxes lie by omission.** An overnight codex run can't always bind ports or create `.git` — checks silently self-skip and "done" gets self-attested. So `ralph.sh` git-inits and auto-commits *on the host* after every iteration, and the optional `VERIFY_CMD` runs on the host after every batch: if it fails, the "COMPLETE" banner is withheld and an `URGENT` task is injected at the top of the ledger, which the next batch picks up first. Host truth beats sandbox attestation.
+- **The harness is infrastructure, not deliverable.** The loop prompt forbids the engine from modifying `ralph*.sh`, `progress.sh`, or the ledger schema unless a task explicitly names them — learned after an engine rewrote its own harness mid-run and dropped the resilience flags.
 
 ## License
 

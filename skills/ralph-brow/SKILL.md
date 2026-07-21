@@ -48,8 +48,16 @@ each iteration costs real tokens and starts building.**
 - **Golden rules** for the prompt: stack/conventions, reference or clean-room
   paths (what the agent may/may not read), push policy (RALPH_PUSH default: 0
   unless a remote exists), anything project-specific.
-- **Telegram notifications** for the supervisor: on/off (token via env or
-  `~/.openclaw/openclaw.json`).
+- **Telegram notifications** for the supervisor: on/off. If ON, always collect
+  `TELEGRAM_CHAT_ID` — it has NO fallback anywhere; empty means notifications
+  silently off — and `TELEGRAM_BOT_TOKEN` unless already present in the env or
+  in `~/.openclaw/openclaw.json` (`.channels.telegram.botToken`, the
+  supervisor's built-in fallback). Write both to `.env.ralph.local`.
+- **Host verify command** (`VERIFY_CMD`, optional): the ONE command that must
+  ALWAYS pass on a healthy checkout (e.g. `npm run verify`, `make test`,
+  `pytest`) — not the aspirational e2e suite; a half-built project must be able
+  to go green. ralph.sh runs it OUTSIDE the engine sandbox once per batch and
+  injects an URGENT ledger task on failure. Goes in `.env.ralph.local`.
 
 ## 3. Scaffold
 
@@ -68,11 +76,14 @@ Tokens:
 | `{{GOLDEN_RULES}}` | Project rules block inside the prompt heredoc |
 | `{{COMPLETE_TAGLINE}}` | Final Telegram flourish ("The fugu has a face.") |
 | `{{CUSTOM_ENGINE}}` / `{{CUSTOM_PROVIDER}}` / `{{CUSTOM_MODEL}}` / `{{CUSTOM_ENV_KEY}}` | Custom codex-provider engine |
+| `{{ENGINE}}` / `{{ENGINE_LABEL}}` | wrapper.sh: engine id / display label |
+| `{{DATE}}` / `{{TASK_COUNT}}` / `{{ENGINE_LIST}}` | progress.txt.seed: scaffold date / ledger size / rendered wrappers |
 
 Files: `ralph.sh` (core), `ralph-continuous.sh` (supervisor), `progress.sh`
 (meter), one `ralph-<engine>.sh` per chosen engine from `wrapper.sh`,
-`progress.txt` from `progress.txt.seed`, and — only if a custom provider needs a
-key — `.env.ralph.local` from `env.ralph.local.example` (chmod 600; confirm the
+`progress.txt` from `progress.txt.seed`, and `.env.ralph.local` from
+`env.ralph.local.example` whenever anything was collected for it — a custom
+provider key, Telegram credentials, or `VERIFY_CMD` (chmod 600; confirm the
 project's `.gitignore` covers it, e.g. `.env*.local`, before writing a secret).
 
 If NO custom engine was chosen: delete the `{{CUSTOM_ENGINE}}` branches from
@@ -93,7 +104,13 @@ If NO custom engine was chosen: delete the `{{CUSTOM_ENGINE}}` branches from
 
 Whenever the user mentions running the loop overnight, unattended, in tmux, or
 "leaving it going": read `references/overnight.md` (tmux detach-or-die pattern,
-usage-window pacing math, smoke-first rule, clean cut-overs) and relay it.
+usage-window pacing math, smoke-first rule, sandbox probes, clean cut-overs)
+and relay it.
+
+Skill development only (not scaffolding): after editing any template, run
+`tests/smoke.sh` from the ralph-brow repo root — renders with dummy tokens,
+`bash -n` + shellcheck, then drives ralph.sh and the supervisor with a fake
+engine to assert the host git/verify backstops end-to-end.
 
 ## Hard-won facts (do not rediscover)
 
@@ -118,3 +135,15 @@ usage-window pacing math, smoke-first rule, clean cut-overs) and relay it.
   "PRD COMPLETE" from ralph.sh's banner to stop.
 - `progress.sh` counts `"passes"` vs `"passes": true` lines — the ledger must
   keep one flag per line (jq-rewriting the file preserves this).
+- **Engine sandboxes lie by omission.** The fuguFaces overnight codex run could
+  not bind localhost ports or create `.git`: socket/e2e checks silently
+  self-skipped, 45 tasks produced zero commits, and the "run every headless
+  check … STILL set passes=true" clause became self-attestation (4 defects
+  found on real hardware next morning). The host backstops in ralph.sh — git
+  auto-init, per-iteration auto-commit, `VERIFY_CMD` gate with URGENT
+  injection — exist because of this. Never remove them.
+- **Engines WILL rewrite the harness when a task smells adjacent.** A fuguFaces
+  clean-room task rewrote ralph.sh mid-run and silently dropped the
+  network-access flag, error backoff, and batch pacing. The prompt's CRITICAL
+  section now forbids touching harness files unless a task explicitly names
+  them — keep that line when customizing golden rules.
