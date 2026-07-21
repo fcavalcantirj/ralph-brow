@@ -1,0 +1,8 @@
+{
+  "name": "ralph-brow",
+  "description": "Scaffold the Ralph autonomous PRD build loop into any project: spec-interview to prd.json ledger, multi-engine harness (Claude Code, Codex, custom providers), overnight tmux operations.",
+  "author": {
+    "name": "Felipe Cavalcanti",
+    "url": "https://github.com/fcavalcantirj"
+  }
+}

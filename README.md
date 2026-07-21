@@ -35,12 +35,23 @@ The scaffolded harness is engine-agnostic — pick per run:
 
 `./ralph-continuous.sh <engine>` supervises: fixed-size batches, pauses between batches, automatic backoff on rate limits / 429 / 503, optional Telegram notifications, stops at 100%.
 
-## Install (as a Claude Code skill)
+## Install
+
+```bash
+claude plugin marketplace add fcavalcantirj/ralph-brow
+claude plugin install ralph-brow@ralph-brow
+```
+
+That's it — `/ralph-brow` is now available in every project.
+
+### Contributing / local development
 
 ```bash
 git clone https://github.com/fcavalcantirj/ralph-brow.git ~/dev/ralph-brow
-ln -s ~/dev/ralph-brow ~/.claude/skills/ralph-brow
+ln -s ~/dev/ralph-brow/skills/ralph-brow ~/.claude/skills/ralph-brow
 ```
+
+Symlinking the skill folder makes your edits live immediately, no reinstall.
 
 ## Use
 
@@ -94,22 +105,26 @@ Generated ledgers follow [Anthropic's guidance for long-running agent harnesses]
 
 ## The ledger format
 
-`prd.json` is a JSON array, ordered by priority:
+The ledger follows [Anthropic's harness guidance for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents): `prd.json` is a JSON array ordered by build priority, every task carrying **exactly four fields** — no more, no fewer:
 
 ```json
 [
   {
-    "category": "infra",
-    "description": "Initialize the repository and toolchain",
+    "category": "functional",
+    "description": "New chat button creates a fresh conversation",
     "steps": [
-      "Run git init with main as default branch.",
-      "…",
-      "Verify: npm ci succeeds from a clean checkout."
+      "Navigate to main interface",
+      "Click the 'New Chat' button",
+      "Verify a new conversation is created",
+      "Check that chat area shows welcome state",
+      "Verify conversation appears in sidebar"
     ],
     "passes": false
   }
 ]
 ```
+
+`steps` are **end-to-end verification a user would perform** — navigate, click, speak, verify — executable by a human or a browser-automation agent, not implementation notes. Tasks are one-session-sized (a real app easily runs to 100+ of them), all start `passes: false`, and the ledger is immutable to the loop except for flipping `passes` after a task's own steps actually pass.
 
 Conventions the harness understands: an `URGENT` prefix jumps the queue, `DEPENDS ON:` notes gate ordering, every task carries its own `Verify:` steps, and tasks whose verification is human-only get a `UAT:` line in the journal instead of being skipped.
 

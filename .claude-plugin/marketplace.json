@@ -1,0 +1,19 @@
+{
+  "name": "ralph-brow",
+  "description": "Ralph autonomous build-loop scaffolder for Claude Code",
+  "owner": {
+    "name": "Felipe Cavalcanti",
+    "url": "https://github.com/fcavalcantirj"
+  },
+  "plugins": [
+    {
+      "name": "ralph-brow",
+      "description": "Scaffold the Ralph autonomous PRD build loop into any project: spec-interview to prd.json ledger, multi-engine harness (Claude Code, Codex, custom providers), overnight tmux operations.",
+      "author": {
+        "name": "Felipe Cavalcanti"
+      },
+      "category": "productivity",
+      "source": "./"
+    }
+  ]
+}
